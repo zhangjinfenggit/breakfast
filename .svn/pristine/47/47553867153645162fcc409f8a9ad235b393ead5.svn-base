@@ -1,0 +1,45 @@
+$(function () {
+
+    // 退款原因选择
+    $('.que_list li').click(function(){
+        $(this).addClass('current').siblings().removeClass('current');
+    })
+
+    //订单号
+    var orderNo = GetQueryString("orderNo");
+
+    $("#submitBtn").click(function () {
+        var refundRemark = $('#refundRemark');
+        var refundRemarkVal = $.trim(refundRemark.val());
+
+        if (!$('.que_list li').hasClass('current')) {
+            setTimeoutAlert('请选择退款原因');
+        } else if ($('.que_list li').last().hasClass('current') && refundRemarkVal == '') {
+            setTimeoutAlert('请填写详细情况');
+            refundRemark.focus();
+        } else {
+            var _data = {
+                "orderNo": "201710112103",
+                "refundRemark": refundRemarkVal,
+                "type": $(".que_list > .current").attr("values"),
+                "photo": $('#fileSrc').val()
+            }
+            $.ajax({
+                type: "post",
+                headers: setHeader,
+                url: "http://" + ip + "/breakfastApi/weixin/saveRefundMsg/",
+                async: true,
+                data: JSON.stringify(_data),
+                dataType: "json",
+                success: function (result) {
+                    if (result.retCode == "000000") {
+                        setTimeoutAlert('提交成功');
+                        location.href="sublime_refund.html"
+                    }else{
+                        setTimeoutAlert(result.retMsg);
+                    }
+                }
+            })
+        }
+    })
+});

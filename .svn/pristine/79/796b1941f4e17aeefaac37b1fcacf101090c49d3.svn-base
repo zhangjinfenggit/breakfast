@@ -1,0 +1,175 @@
+$(function () {
+
+    //获取店铺信息
+    var shopInfos = JSON.parse(sessionStorage.getItem('sessionShopInfo'));
+    $('.shopName').text(shopInfos.shopName)
+    $('.shopAddress').text(shopInfos.shopAddress);
+
+    //订单编号
+    var orderNo = GetQueryString("orderNo");
+    //商品列表
+    $.ajax({
+        type: "post",
+        headers: setHeader,
+        url: "http://" + ip + "/breakfastApi/weixin/queryOrderDetail",
+        async: true,
+        data: JSON.stringify({"orderNo": orderNo}),
+        dataType: "json",
+        success: function (result) {
+            if (result.retCode == "000000") {
+                var list = result.data;
+                var str1 = "";	//单品符串
+                var str2 = "";	//套餐字符串
+                var foodsList = JSON.parse(list.orderDetail);
+                sessionStorage.setItem("orderDetail", list.orderDetail);    //存订单信息
+                if (list != null) {
+                    if (foodsList.singleProductList && foodsList.singleProductList.length > 0) {
+                        var singleList = foodsList.singleProductList;
+                        for (var i = 0; i < singleList.length; i++) {
+                            str1 += '<li>\
+									<p>\
+										<span>' + singleList[i].name + '</span><span>x' + singleList[i].amount + '</span>\
+										<span>¥<u class="price">' + singleList[i].singleMoney + '</u></span>\
+									</p>\
+								</li>'
+                        }
+                    }
+                    if (foodsList.packProductList && foodsList.packProductList.length > 0) {
+                        var packageList = foodsList.packProductList;
+                        for (var i = 0; i < packageList.length; i++) {
+                            var str22 = '';
+                            var packageListSingle = packageList[i].singleProductList; //套餐里的单品
+                            for (var x = 0; x < packageListSingle.length; x++) {
+                                str22 += '<li>' + packageListSingle[i].name + 'x' + packageListSingle[i].amount + '</li>'
+                            }
+                            str2 += '<li>\
+									<p>\
+										<span>' + packageList[i].name + '</span><span>x' + packageList[i].amount + '</span>\
+										<span>¥<u class="price">' + packageList[i].packageMoney + '</u></span>\
+									</p>\
+									<ul>' + str22 + '</ul>\
+								</li>'
+                        }
+                    }
+                }
+                $("#orderDetail").html(str1 + str2);
+                $('.totalMoney').text(list.orderMoney);
+                //优惠券抵扣金额
+                getCoupon(list.orderMoney);
+            } else {
+                setTimeoutAlert(result.retMsg);
+            }
+        }
+    })
+
+    //可用优惠券
+    function getCoupon(allPrice) {
+        $.ajax({
+            type: "post",
+            headers: setHeader,
+            url: "http://" + ip + "/breakfastApi/weixin/availableCoupon",
+            async: true,
+            data: JSON.stringify({ordersMoney: allPrice}),
+            dataType: "json",
+            success: function (result) {
+                if (result.retCode == "000000") {
+                    var list = result.data;
+                    var couponMoney = 0;
+                    var couponStr = '<p class="noCoupon" style="color:#999">暂无可用优惠券</p>';
+                    if (list != null && list.length > 0) {
+                        couponMoney = list[0].couponMoney;
+                        $('.coupon_deduction').attr('data-id',list[0].id);
+                        couponStr = '';
+                        $('.coupon_deduction').html('-¥' + couponMoney); //页面加载完显示一张可用的优惠券金额
+                        for (var i = 0; i < list.length; i++) {
+                            couponStr += "<li class='item'>\
+								<img src='images/coupon.png' alt='' class='coupon'>\
+								<div class='cou_desc'>\
+								    <span class='couponId' style='display:none;'>"+list[i].id+"</span>\
+									<p class='cou_price'>¥" + list[i].couponMoney + "</p>\
+									<p>" + list[i].couponName + "</p>\
+									<span>限" + list[i].overdueTime + "日前使用</span>\
+									<span>使用此劵可抵扣" + list[i].couponMoney + "元早餐费用</span>\
+								</div>\
+								<img src='images/current.png' alt='' class='current'>\
+							</li>";
+                        }
+                    }
+                    $('.coupon_list').html(couponStr);
+
+                    $('.coupon_list .item').eq(0).addClass('cur');//默认选中第一个优惠券
+                    needMoney(allPrice, couponMoney);//小计
+                } else {
+                    setTimeoutAlert(result.retMsg);
+                }
+            }
+        });
+    }
+
+    //优惠券弹窗
+    $('.goCouponBtn').on('click', function () {
+        var cont = $('.noCoupon').text();
+        if(cont != '暂无可用优惠券'){
+            $('.order_confirm').hide();
+            $('.dialog').show();
+            chooseCoupon();
+        }else{
+            setTimeoutAlert('您还没有可用的优惠券哦');
+        }
+    })
+
+
+    // 进入优惠券弹窗，选择优惠券时
+    function chooseCoupon() {
+        $('.coupon_list .item').on('click', function () {
+            var _this = $(this);
+            var money = _this.find('.cou_price').text();  //所选择优惠券的面额
+            var allPrice = parseFloat($('.totalMoney').text());   //订单总价，未使用优惠券前
+            var couponMoney = parseFloat(money.slice(1));  //所选择优惠券的面额
+            var couponId = _this.find('.couponId').text();
+
+            _this.addClass('cur').siblings().removeClass('cur');
+
+            setTimeout(function () {    //优惠券页面的显示隐藏
+                $('.order_confirm').show();
+                $('.dialog').hide();
+                $('.coupon_deduction').attr('data-id',couponId);
+            }, 500);
+
+            $('.coupon_deduction').html('-' + money); //优惠券抵扣值显示
+            needMoney(allPrice, couponMoney);//小计
+
+        })
+    }
+
+    //小计
+    function needMoney(allPrice, couponMoney) {
+        var needPayMoney = allPrice - couponMoney;  //小计
+        $('.order_sum').text(needPayMoney); //小计
+    }
+
+    //去支付
+    $('.goPay').on('click',function(){
+        var obj = $('.coupon_deduction');
+        var data = {
+            orderNo:orderNo,
+            couponId:parseInt(obj.attr('data-id')),
+            couponMoney:obj.text().slice(2)
+         }
+        $.ajax({
+            type: "post",
+            headers: setHeader,
+            url: "http://" + ip + "/breakfastApi/weixin/pay",
+            data: JSON.stringify(data),
+            dataType: "json",
+            success: function (result) {
+                if (result.retCode == "000000") {
+                    setTimeoutAlert('支付成功');
+                    window.location.href = "success_pay.html"
+                }
+            }
+        })
+
+    })
+
+});

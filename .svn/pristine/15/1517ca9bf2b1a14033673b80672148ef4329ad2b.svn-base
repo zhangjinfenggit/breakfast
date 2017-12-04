@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hmw.open.mapper.BfOrderMapper">
+
+	<resultMap id="BaseResultMap" type="com.hmw.open.model.BfOrder">
+		<id column="id" property="id" />
+		<result column="order_no" property="orderNo" />
+		<result column="order_time" property="orderTime" />
+		<result column="order_address" property="orderAddress" />
+		<result column="take_address" property="takeAddress" />
+		<result column="shop_id" property="shopId" />
+		<result column="shop_name" property="shopName" />
+		<result column="order_detail_id" property="orderDetailId" />
+		<result column="order_detail" property="orderDetail" />
+		<result column="order_money" property="orderMoney" />
+		<result column="coupon_id" property="couponId" />
+		<result column="coupon_detail" property="couponDetail" />
+		<result column="order_status" property="orderStatus" />
+		<result column="refund_detail" property="refundDetail" />
+		<result column="transfer_stauts" property="transferStauts" />
+		<result column="user_id" property="userId" />
+		<result column="phone" property="phone" />
+		<result column="coupon_deduction" property="couponDeduction" />
+		<result column="platform_partion" property="platformPartion" />
+		<result column="sum_income" property="sumIncome" />
+		<result column="platform_profit" property="platformProfit" />
+		<result column="is_flag" property="isFlag" />
+		<result column="cancle_message" property="cancleMessage" />
+		<result column="operater" property="operater" />
+		<result column="create_time" property="createTime" />
+		<result column="update_time" property="updateTime" />
+		<result column="remark" property="remark" />
+	</resultMap>
+
+    <!-- 通用查询结果列-->
+	<sql id="Base_Column_List">
+		id, order_no AS orderNo, order_time AS orderTime, order_address AS
+		orderAddress, take_address AS takeAddress, shop_id AS shopId,
+		shop_name AS shopName, order_detail_id AS orderDetailId, order_detail
+		AS orderDetail, order_money AS orderMoney, coupon_id AS couponId,
+		coupon_detail AS couponDetail, order_status AS orderStatus,
+		refund_detail AS refundDetail, transfer_stauts AS transferStauts,
+		user_id AS userId, phone, coupon_deduction AS couponDeduction,
+		platform_partion AS platformPartion, sum_income AS sumIncome,
+		platform_profit AS platformProfit, is_flag AS isFlag, cancle_message AS cancleMessage, 
+		operater, create_time AS createTime, update_time AS updateTime, remark
+	</sql>
+
+
+	<select id="selectUntranferedMoney" resultType="java.lang.Integer"  parameterType="com.hmw.open.model.BfOrder">
+		SELECT
+			sum(order_money)
+		FROM
+			bf_order
+		WHERE
+			shop_id = #{shopId} and
+			transfer_stauts = 2
+	</select>
+	
+	<!-- 获得订单列表 -->
+	<select id="getOrderList" resultType="com.hmw.open.model.BfOrdersVo">
+		SELECT
+			order_no AS orderNo,
+			order_time AS orderTime,
+			order_detail_id AS orderDetailId
+		FROM
+			bf_order
+		${ew.sqlSegment}
+	</select>
+	
+    <select id="getOrdersDetail" resultType="com.hmw.open.model.BfOrderDetailVo">
+		SELECT
+			prodcut_name AS prodcutName,
+			type AS type,
+			amount AS amount
+		FROM
+		 	bf_order_detail
+ 		    ${ew.sqlSegment}
+    </select>
+	
+	
+</mapper>

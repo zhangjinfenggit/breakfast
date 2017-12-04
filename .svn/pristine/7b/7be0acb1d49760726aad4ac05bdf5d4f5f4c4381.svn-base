@@ -1,0 +1,458 @@
+package com.hmw.open.service.impl;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import com.baomidou.mybatisplus.mapper.Wrapper;
+import com.hmw.open.common.constants.Constant;
+import com.hmw.open.common.constants.ShopErrorCode;
+import com.hmw.open.common.result.BaseResult;
+import com.hmw.open.common.result.ErrorCode;
+import com.hmw.open.common.utils.StringUtil;
+import com.hmw.open.mapper.BfPackageProductMapper;
+import com.hmw.open.mapper.BfShopMapper;
+import com.hmw.open.mapper.BfSingeProductMapper;
+import com.hmw.open.model.BfPackageProduct;
+import com.hmw.open.model.BfShop;
+import com.hmw.open.model.BfSingeProduct;
+import com.hmw.open.model.UserBaseInfoVo;
+import com.hmw.open.web.app.request.shopcontroller.AddMerchantsInfoRequest;
+import com.hmw.open.web.app.request.shopcontroller.CertificationMerchantsInfoRequest;
+import com.hmw.open.web.app.request.shopcontroller.PackageProductRequest;
+import com.hmw.open.web.app.request.shopcontroller.SingleListInfo;
+import com.hmw.open.web.app.request.shopcontroller.SingleProductRequest;
+import com.hmw.open.web.app.request.shopcontroller.UpdateMerchantsInfoRequest;
+
+import sun.misc.BASE64Decoder;
+
+@Service
+@SuppressWarnings("all")
+public class AppShopServiceImpl {
+
+	public final static String REDIS_PRODUCT = "UNIQUE_PRODUCT_KEY";
+	private final static Logger logger = Logger.getLogger(AppShopServiceImpl.class);
+
+	@Autowired
+	RedisTemplate<String, String> redisTemplate;
+
+	@Autowired
+	BfSingeProductMapper bfSingeProductMapper;
+
+	@Autowired
+	BfPackageProductMapper bfPackageProductMapper;
+
+	@Autowired
+	BfShopMapper bfShopMapper;
+
+	/**
+	 * 根据token获取商家用户的信息，然后通过商家 用户的手机号，获取店铺，根据店铺获取店铺内的所有套餐和单品
+	 * 
+	 * @param form
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public BaseResult getCodegoodsList(UserBaseInfoVo userVo) throws Exception {
+
+		BaseResult baseResult = null;
+		List<BfSingeProduct> singeProductList = null;
+		List<BfPackageProduct> packageProductList = null;
+
+		String phone = userVo.getPhone();
+		/*
+		 * Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		 * wrapper.eq("phone", phone); BfShop shop =
+		 * iBfShopService.selectOne(wrapper);
+		 */
+
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		Map<String, Object> map = null;
+		try {
+			String product = redisTemplate.opsForValue().get(AppShopServiceImpl.REDIS_PRODUCT + shop.getId());
+			if (product != null) {
+				map = (Map<String, Object>) JSON.parse(product);
+			}
+		} catch (Exception e) {
+			logger.error("商品信息缓存异常, getCodegoodsList =" + userVo, e);
+		}
+
+		if (map == null) {
+			map = new HashMap<String, Object>();
+			Long shopId = shop.getId();
+			// 根据店铺id获取所有单品
+			singeProductList = getBfSingeProductList(shopId);
+			// 根据店铺Id获取所有的套餐
+			packageProductList = getBfPackageProductList(shopId);
+			map.put("singeProductList", singeProductList);
+			map.put("packageProductList", packageProductList);
+			map.put("businessStatus", shop.getBusinessStatus());
+			try {
+				String productList = JSON.toJSONString(map);
+				redisTemplate.opsForValue().set(AppShopServiceImpl.REDIS_PRODUCT + shop.getId(), productList);
+			} catch (Exception e) {
+				logger.error("商品信息缓存异常, getCodegoodsList =" + userVo, e);
+			}
+		}
+
+		baseResult = BaseResult.success();
+		// 返回查询的信息
+		baseResult.setData(map);
+
+		return baseResult;
+	}
+
+	/**
+	 * 根据店铺Id获取所有的单品
+	 * 
+	 * @param shopId
+	 *            店铺Id
+	 * @return 单品集合
+	 */
+	private List<BfSingeProduct> getBfSingeProductList(Long shopId) throws Exception {
+
+		Wrapper<BfSingeProduct> wrapper = new EntityWrapper<BfSingeProduct>();
+		wrapper.eq("shop_id", shopId).eq("single_type", Constant.SINGLE_TYPE_2);
+
+		// 向数据库中进行查询
+		return bfSingeProductMapper.selectList(wrapper);
+	}
+
+	/**
+	 * 根据店铺Id获取所有的套餐
+	 * 
+	 * @param shopId
+	 *            店铺Id
+	 * @return 套餐集合
+	 */
+	private List<BfPackageProduct> getBfPackageProductList(Long shopId) throws Exception {
+
+		Wrapper<BfPackageProduct> wrapper = new EntityWrapper<BfPackageProduct>();
+		wrapper.eq("shop_id", shopId);
+		// 向数据库中进行查询
+		// List<BfPackageProduct> bfPackageProductList =
+		// iBfPackageProductService.selectList(wrapper);
+		List<BfPackageProduct> bfPackageProductList = bfPackageProductMapper.selectList(wrapper);
+		// 判断套餐是否为空
+		if (null != bfPackageProductList && bfPackageProductList.size() > 0) {
+
+			for (BfPackageProduct bfPackageProduct : bfPackageProductList) {
+				// 获取套餐内所有的商品Id
+				String singleIdString = bfPackageProduct.getSingleId();
+				if (StringUtil.isEmpty(singleIdString)) {
+					// id为空
+					logger.error(ShopErrorCode.GOODSLIST_SINGLEPRODUCTID_ISNULL + "，当前套餐为： "
+							+ JSON.toJSONString(bfPackageProduct), null);
+				} else {
+					// 分割Id串
+					String[] singleIds = singleIdString.split(",");
+					// 创建套餐集合
+					List<BfSingeProduct> singeProductList = new ArrayList<BfSingeProduct>();
+					if (singleIds != null && singleIds.length > 0) {
+						// 把套餐内的对象封装到List里面
+						for (String singleId : singleIds) {
+							singeProductList.add(bfSingeProductMapper.selectById(singleId));
+						}
+					}
+					bfPackageProduct.setBfSingeProductList(singeProductList);
+				}
+			}
+
+		}
+
+		return bfPackageProductList;
+	}
+
+	/**
+	 * 添加单件商品，并且把单件商品插入到当前的店铺中去
+	 * 
+	 * @param form
+	 * @return
+	 */
+	public BaseResult setSingleProduct(SingleProductRequest form, UserBaseInfoVo userVo) throws Exception {
+
+		BaseResult baseResult = null;
+		String phone = null;
+		phone = userVo.getPhone();
+
+		/*
+		 * Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		 * wrapper.eq("phone", phone);
+		 */
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+
+		BfSingeProduct singeProduct = new BfSingeProduct();
+		// 封装店铺信息
+		singeProduct.setShopId(shop.getId());
+		singeProduct.setShopName(shop.getName());
+		singeProduct.setSingleMoney(form.getSingleMoney());
+		singeProduct.setSingleAmount(form.getSingleAmount());
+		singeProduct.setSingleName(form.getSingleName());
+		// 该接口为设置套餐
+		singeProduct.setSingleType(Constant.SINGLE_TYPE_2);
+		singeProduct.setCreateTime(new Date());
+		singeProduct.setStatus(Constant.SALE_STATUS_1);
+		// 设置当前的操作者
+		singeProduct.setOperater(shop.getName());
+		singeProduct.setRealAmount(form.getSingleAmount());
+		bfSingeProductMapper.insert(singeProduct);
+		try {
+
+			redisTemplate.opsForValue().set(AppShopServiceImpl.REDIS_PRODUCT + shop.getId(), null);
+
+		} catch (Exception e) {
+
+			logger.error("商品信息缓存异常, 方法名为 ： setPackageProduct ", e);
+
+		}
+
+		baseResult = BaseResult.success();
+		// 返回查询的信息
+		return baseResult;
+	}
+
+	/**
+	 * 把套餐添加到套餐表中并且把单品也插入到单品表中
+	 * 
+	 * @param form
+	 * @return
+	 */
+	@SuppressWarnings("null")
+	public BaseResult setPackageProduct(PackageProductRequest form, UserBaseInfoVo userVo) throws Exception {
+
+		String phone = null;
+
+		phone = userVo.getPhone();
+
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+
+		List<SingleListInfo> singleList = form.getSingleList();
+
+		if (singleList == null && singleList.size() < 1) {
+			logger.error("往套餐添加单件商品信息失败：packageProduct信息 =" + form);
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		String singleIdList = "";
+		for (SingleListInfo singleListInfo : singleList) {
+			// 添加套餐内的单品信息
+			BfSingeProduct entity = new BfSingeProduct();
+			entity.setSingleName(singleListInfo.getSingleName());
+			entity.setShopId(shop.getId());
+			entity.setShopName(shop.getName());
+			entity.setCreateTime(new Date());
+			entity.setSingleAmount(singleListInfo.getSingleNumber());
+			entity.setStatus(Constant.SALE_STATUS_1);
+			// 设置当前的操作者
+			entity.setOperater(shop.getName());
+			entity.setSingleType(Constant.SINGLE_TYPE_1);
+			bfSingeProductMapper.insert(entity);
+			singleIdList += entity.getId() + ",";
+		}
+
+		// 封装套餐信息
+		BfPackageProduct bfPackageProduct = new BfPackageProduct();
+
+		bfPackageProduct.setPackageName(form.getPackName());
+		bfPackageProduct.setPackageAmount(form.getPackAmount());
+		bfPackageProduct.setRealAmount(form.getPackAmount());
+		bfPackageProduct.setPackageMoney(form.getPackMoney());
+		bfPackageProduct.setShopId(shop.getId());
+		bfPackageProduct.setName(shop.getName());
+		bfPackageProduct.setCreateTime(new Date());
+		bfPackageProduct.setSingleId(singleIdList);
+		// 设置当前的操作者
+		bfPackageProduct.setOperater(shop.getName());
+		bfPackageProduct.setPackStatus(Integer.parseInt(Constant.SALE_STATUS_1));
+		bfPackageProductMapper.insert(bfPackageProduct);
+		try {
+
+			redisTemplate.opsForValue().set(AppShopServiceImpl.REDIS_PRODUCT + shop.getId(), null);
+
+		} catch (Exception e) {
+
+			logger.error("商品信息缓存异常, 方法名为 ： setPackageProduct ", e);
+
+		}
+		return BaseResult.success();
+	}
+
+	/**
+	 * 店铺认证 根据商家提供的信息进行店铺认证
+	 * 
+	 * @param form
+	 * @return
+	 */
+	public BaseResult certificationMerchantsInfo(CertificationMerchantsInfoRequest form, UserBaseInfoVo userVo,
+			String dir) throws Exception {
+
+		String phone = null;
+
+		phone = userVo.getPhone();
+
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		try {
+
+			BASE64Decoder base64Decoder = new BASE64Decoder();
+			String cardPhotoOContent = form.getCardPhotoO();
+			String cardPhotoUContent = form.getCardPhotoU();
+			String businessPhotoContent = form.getBusinessPhoto();
+			String licensePhotoContent = form.getLicensePhoto();
+			// 1.先保存cardPhotoO
+			// 把图片保存到本地
+			Long time = System.nanoTime();
+			// 以微妙作为文件名
+			String cardPhotoOName = time + "";
+			FileUtils.writeByteArrayToFile(new File(dir, cardPhotoOName),
+					base64Decoder.decodeBuffer(cardPhotoOContent));
+			form.setCardPhotoO("upload/"+cardPhotoOName);
+
+			// 2.再保存cardPhotoU
+			// 把图片保存到本地
+			time = System.nanoTime();
+			// 以微妙作为文件名
+			String cardPhotoUName = time + "";
+			FileUtils.writeByteArrayToFile(new File(dir, cardPhotoUName),
+					base64Decoder.decodeBuffer(cardPhotoUContent));
+			form.setCardPhotoU("upload/"+cardPhotoUName);
+
+			// 3.再保存businessPhoto
+			// 把图片保存到本地
+			time = System.nanoTime();
+			// 以微妙作为文件名
+			String businessPhotoName = time + "";
+			FileUtils.writeByteArrayToFile(new File(dir, businessPhotoName),
+					base64Decoder.decodeBuffer(businessPhotoContent));
+			form.setBusinessPhoto("upload/"+businessPhotoName);
+
+			// 4.再保存licensePhoto
+			// 把图片保存到本地
+			time = System.nanoTime();
+			// 以微妙作为文件名
+			String licensePhotoName = time + "";
+			FileUtils.writeByteArrayToFile(new File(dir, licensePhotoName),
+					base64Decoder.decodeBuffer(licensePhotoContent));
+			form.setLicensePhoto("upload/"+licensePhotoName);
+
+		} catch (Exception e) {
+			logger.error("图片上传失败", e);
+			throw new RuntimeException("图片上传失败!!!");
+		}
+
+		// 填充店铺信息
+		shop.setCardPhotoO(form.getCardPhotoO());
+		shop.setBusinessPhoto(form.getBusinessPhoto());
+		shop.setCardPhotoU(form.getCardPhotoU());
+		shop.setLicensePhoto(form.getLicensePhoto());
+		shop.setIsFlag("1");
+		// 更改店铺的认证状态,更改为已认证
+		shop.setCertifiedStatus(Constant.CERTIFIED_STATUS_1);
+
+		bfShopMapper.updateById(shop);
+
+		return BaseResult.success();
+	}
+
+	/**
+	 * 更新店铺信息 根据商家提供的位置，更新当前店铺的位置
+	 * 
+	 * @param form
+	 * @return
+	 */
+	public BaseResult updateMerchantsInfo(UpdateMerchantsInfoRequest form, UserBaseInfoVo userVo) {
+
+		String phone = userVo.getPhone();
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+
+		// 填充店铺信息
+
+		shop.setAddress(form.getAddress());
+
+		bfShopMapper.updateById(shop);
+
+		return BaseResult.success();
+	}
+
+	/**
+	 * 商家基本信息填写 根据前台传入的商家基本信息 修改并保存
+	 * 
+	 * @param form
+	 * @return
+	 */
+	public BaseResult addMerchantsInfo(AddMerchantsInfoRequest form, UserBaseInfoVo userVo, String dir) {
+
+		String phone = userVo.getPhone();
+
+		BfShop selectEntity = new BfShop();
+		selectEntity.setPhone(phone);
+		BfShop shop = bfShopMapper.selectOne(selectEntity);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+
+		try {
+			BASE64Decoder base64Decoder = new BASE64Decoder();
+			String fileContent = form.getPhoto();
+			// 把图片保存到本地
+			Long time = System.nanoTime();
+			// 以微妙作为文件名
+			String filename = time + "";
+			FileUtils.writeByteArrayToFile(new File(dir, filename), base64Decoder.decodeBuffer(fileContent));
+			form.setPhoto("upload/"+filename);
+		} catch (Exception e) {
+			logger.error("图片上传失败", e);
+			throw new RuntimeException("图片上传失败!!!");
+		}
+		// 填充店铺信息
+
+		shop.setAddress(form.getAddress());
+		shop.setName(form.getName());
+		shop.setSubwayId(Long.parseLong(form.getSubwayId()));
+		shop.setLongitude(Double.parseDouble(form.getLongitude()));
+		shop.setLatitude(Double.parseDouble(form.getLatitude()));
+		shop.setCreateTime(new Date());
+		shop.setPhoto(form.getPhoto());
+		shop.setIsFlag("2");
+		shop.setBusinessStatus(Constant.BUSINESS_STATUS_1);
+		bfShopMapper.updateById(shop);
+
+		return BaseResult.success();
+	}
+
+}

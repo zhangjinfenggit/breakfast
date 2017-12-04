@@ -1,0 +1,28 @@
+validationQuery=SELECT 1
+jdbc_url=jdbc:mysql://59.45.169.9:3306/breakfast?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true
+jdbc_username=breakfastuser
+jdbc_password=breakfastuser
+
+
+redis.host=59.45.169.9
+redis.port=6379
+redis.password=m9r1n1Fd
+redis.timeout=1000
+redis.pool.maxActive=50
+redis.pool.maxIdle=20
+redis.pool.minIdle=5
+redis.pool.maxWait=1000
+redis.pool.testOnBorrow=true
+redis.pool.testOnReturn=true
+
+#sms swtch 
+sms.swtch=ON
+#
+sms.isReturn=ON
+
+#wechat
+wechat.appid=wxb0952214fa93c239
+wechat.appSecret=72c478bc715ce097f2e6cc0ff819341c
+wechat.redirect_uri=http://breakfast.coralsec.com/breakfastApi/weixin/oauth?type=1
+wechat.scope=snsapi_base 
+wechat.order.success.templateId=ha5U1vtLU90ASElznJGi5LlKuvnubWgQX_JAZF4TAwQ

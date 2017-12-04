@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+	<div class="alert">
+		<p>这是个弹窗哎嘿嘿</p>
+		<div class="btn_box">
+			<input type="button" value="取消" class="no">
+			<input type="button" value="确定" class="yes">
+		</div>
+	</div>
+</body>
+</html>

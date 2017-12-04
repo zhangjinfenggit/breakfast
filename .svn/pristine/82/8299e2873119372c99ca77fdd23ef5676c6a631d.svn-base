@@ -1,0 +1,22 @@
+package com.hmw.open.mapper;
+
+import com.hmw.open.model.BfOrder;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.baomidou.mybatisplus.mapper.BaseMapper;
+import com.baomidou.mybatisplus.plugins.pagination.Pagination;
+
+/**
+ * <p>
+ * Mapper接口
+ * </p>
+ *
+ * @author wx
+ * @since 2017-10-03
+ */
+public interface BfOrderMapper extends BaseMapper<BfOrder> {
+	
+	public Integer selectUntranferedMoney(Pagination page,  BfOrder bfOrder);
+
+}

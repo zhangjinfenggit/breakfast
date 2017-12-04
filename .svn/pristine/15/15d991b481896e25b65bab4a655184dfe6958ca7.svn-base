@@ -1,0 +1,308 @@
+package com.hmw.open.service.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import com.baomidou.mybatisplus.mapper.Wrapper;
+import com.hmw.open.common.constants.BusinessRecordErrorCode;
+import com.hmw.open.common.constants.Constant;
+import com.hmw.open.common.result.BaseResult;
+import com.hmw.open.common.result.ErrorCode;
+import com.hmw.open.common.utils.DateUtils;
+import com.hmw.open.common.utils.StringUtil;
+import com.hmw.open.mapper.BfBusinessRecordDayMapper;
+import com.hmw.open.model.BfBusinessRecordDayVo;
+import com.hmw.open.model.BfOrder;
+import com.hmw.open.model.BfOrderDetail;
+import com.hmw.open.model.BfOrderDetailVo;
+import com.hmw.open.model.BfOrderVo;
+import com.hmw.open.model.BfOrderVos;
+import com.hmw.open.model.BfShop;
+import com.hmw.open.model.HistroySumRecordVo;
+import com.hmw.open.model.UserBaseInfoVo;
+import com.hmw.open.service.IBfBusinessRecordDayService;
+import com.hmw.open.service.IBfOrderDetailService;
+import com.hmw.open.service.IBfOrderService;
+import com.hmw.open.service.IBfShopService;
+import com.hmw.open.web.app.request.bussinesscontroller.BusinessRecordDetailRequest;
+
+@Service
+public class AppBusinessRecordService {
+
+	private final static Logger logger = Logger.getLogger(AppBusinessRecordService.class);
+
+	@Resource
+	RedisTemplate<String, String> redisTemplate;
+
+	@Autowired
+	IBfBusinessRecordDayService businessRecordDayService;
+	
+	@Autowired
+	IBfOrderService  iBfOrderService;
+	
+	@Autowired
+	IBfOrderDetailService iBfOrderDetailService;
+	
+	@Autowired
+	IBfBusinessRecordDayService iBfBusinessRecordDayService;
+	
+	@Autowired
+	BfBusinessRecordDayMapper bfBusinessRecordDayMapper;
+	
+	@Autowired
+	IBfShopService iBfShopService;
+	
+	@Autowired
+	CacheService cacheService;
+	/**
+	 * 通过token获取商家的信息，然后通过传入当天的时间来获取今日的流水
+	 * 
+	 * @param businessRecord
+	 * @return
+	 */
+	public BaseResult merchantSelectRefundRecord(UserBaseInfoVo userVo) throws Exception{
+		BaseResult baseResult = null;
+		Map<String, Object> map = new HashMap<>();
+
+		// 获得当天的流水记录
+		List<BfOrderVo> orderList = new ArrayList<>();
+
+		String phone = userVo.getPhone();
+		
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		// 查询商店
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		
+		if(null == shop){
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		
+		// 商店Id
+		Long shopId = shop.getId();
+		orderList = getBfOrderList(shopId);
+		
+		// 放入查询到的数据
+		map.put("orderList", orderList);
+		
+		baseResult = BaseResult.success();
+		// 返回查询的信息 
+		baseResult.setData(map);
+
+		return baseResult;
+	}
+	
+	/**
+	 * 
+	 * @param shopId
+	 * @return
+	 */
+	public List<BfOrderVo> getBfOrderList(Long shopId){
+		Wrapper<BfOrder> wrapper = new EntityWrapper<>();
+		wrapper.eq("shop_id", shopId).ge("create_time", DateUtils.morning(new Date())); // 
+		// 查询到订单信息
+		List<BfOrder> bfOrders = iBfOrderService.selectList(wrapper);
+		List<BfOrderVo> bfOrderVos = new ArrayList<>();
+		
+		for(BfOrder bfOrder : bfOrders){
+			// 获取订单的详情id
+			String orderDetailId = bfOrder.getOrderDetailId();
+			if(StringUtil.isEmpty(orderDetailId)){
+				logger.error(BusinessRecordErrorCode.ORDER_ISEMPTY + "，当前订单为：" + JSON.toJSONString(bfOrder), null);
+			}else{
+				// 分割获得详情id
+				String [] orderDetailIds = orderDetailId.split(",");
+				BfOrderVo bfOrderVo = new BfOrderVo();
+				List<BfOrderDetailVo> bfOrderDetailVos = new ArrayList<>();
+				for(String str : orderDetailIds){
+					str = StringUtil.checkNullCharacters(str);
+					// 如果是空的话跳过
+					if(StringUtil.isEmpty(str)){
+						continue;
+					}
+					// 类型转换
+					Integer id = Integer.parseInt(str);
+					
+					// 通过id查询详情表中内容
+					BfOrderDetail bfOrderDetail = iBfOrderDetailService.selectById(id);
+					
+					BfOrderDetailVo bfOrderDetailVo = new BfOrderDetailVo();
+					bfOrderDetailVo.setProdcutName(bfOrderDetail.getProdcutName());
+					bfOrderDetailVo.setType(bfOrderDetail.getType());
+					bfOrderDetailVo.setAmount(bfOrderDetail.getAmount());
+					bfOrderDetailVos.add(bfOrderDetailVo);
+				}
+				bfOrderVo.setOrderMoney(bfOrder.getOrderMoney()); // 订单金额
+				bfOrderVo.setOrderNo(bfOrder.getOrderNo()); // 订单号
+				bfOrderVo.setOrderStatus(bfOrder.getOrderStatus()); // 订单状态
+				bfOrderVo.setRefundDetail(bfOrder.getRefundDetail()); // 退款说明
+				bfOrderVo.setBfOrderDetailVo(bfOrderDetailVos); // 订单详情 
+				bfOrderVos.add(bfOrderVo);
+			}
+		}
+		return bfOrderVos;
+	}
+	
+	/**
+	 * 通过
+	 * @param totalBusinessRecordRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public BaseResult getTotalBusinessRecord (UserBaseInfoVo userVo) throws Exception{
+		// 初始化为0
+		BigDecimal historySumIncome = new BigDecimal(0); // 总收入
+		BigDecimal historySumRefund = new BigDecimal(0);// 退款
+		BigDecimal historySumPartion = new BigDecimal(0); // 平台
+		BigDecimal total = new BigDecimal(0); // 合计
+		
+		BaseResult baseResult = null;
+		Map<String, Object> map = new HashMap<>();
+
+		String phone  = userVo.getPhone();
+
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		if(shop==null){
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		Long shopId = shop.getId();
+		// 未退款
+		BfBusinessRecordDayVo incomeAndNotRecord = bfBusinessRecordDayMapper.getIncomeAndNotRefund(new EntityWrapper<Integer>().eq("shop_id", shopId).eq("order_status", Constant.ORDER_STATUS_4).eq("transfer_stauts", Constant.TRANSFER_STAUTS_1));
+		
+		// 如果未退款不为空
+		if(null != incomeAndNotRecord){
+			historySumIncome = historySumIncome.add(incomeAndNotRecord.getHistorySumIncome());// 总收入
+			historySumPartion = historySumPartion.add(incomeAndNotRecord.getHistorySumPartion());// 平台分成
+			total = total.add(incomeAndNotRecord.getTotal()); // 合计
+		}
+		// 已退款
+		BfBusinessRecordDayVo incomeAndRecorded = bfBusinessRecordDayMapper.getIncomeAndRefunded(new EntityWrapper<Integer>().eq("shop_id", shopId).eq("order_status", Constant.ORDER_STATUS_7).eq("transfer_stauts", Constant.TRANSFER_STAUTS_1));
+		
+		// 如果已退款为空
+		if(null != incomeAndRecorded){
+			historySumIncome = historySumIncome.add(incomeAndRecorded.getHistorySumIncome());// 总收入
+			historySumRefund = historySumRefund.add(incomeAndRecorded.getHistorySumRefund());
+		}
+		// 历史流水
+		List<HistroySumRecordVo> histroySumRecordVos = bfBusinessRecordDayMapper.getHistorySumRecord(new EntityWrapper<Integer>().eq("shop_id", shopId));
+		map.put("historySumIncome", historySumIncome); // 历史总收入
+		map.put("historySumRefund", historySumRefund); // 历史退款
+		map.put("historySumPartion", historySumPartion); // 平台分成
+		map.put("total", total); // 总收入
+		map.put("histroySumRecord", histroySumRecordVos);// 详情
+		
+		baseResult = BaseResult.success();
+		// 返回查询的信息 
+		baseResult.setData(map);
+		return baseResult;
+	}
+	
+	/**
+	 * 查看历史详情（日）
+	 * @param businessRecordDetailRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public BaseResult getBusinessRecordDetail(BusinessRecordDetailRequest businessRecordDetailRequest,UserBaseInfoVo userVo) throws Exception{
+		BaseResult baseResult = null;
+		Map<String, Object> map = new HashMap<>();
+		
+		String phone = null;
+		phone = userVo.getPhone();
+		
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		if(shop==null){
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		// 获得年月日
+		String appointDay = businessRecordDetailRequest.getOrderTime().substring(0, 10);
+		SimpleDateFormat sdf =   new SimpleDateFormat( "yyyy-MM-dd");
+		Date date = sdf.parse(appointDay); // 转换成指定日期
+		// 获得早上时间
+		String morning = DateUtils.morning(date);
+		// 获得晚上时间
+		String night = DateUtils.night(date);
+		
+		// 历史流水（日） 
+		List<BfOrderVo> bfOrderVos = bfBusinessRecordDayMapper.getOrderDay(new EntityWrapper<>().eq("shop_id", shop.getId()).ge("create_time", morning).le("create_time", night));
+		
+		for(BfOrderVo bfOrderVo : bfOrderVos){
+			String orderDetailId = bfOrderVo.getOrderDetailId();
+			if(StringUtil.isEmpty(orderDetailId)){
+				logger.error(BusinessRecordErrorCode.ORDER_ISEMPTY + "，当前订单为：" + JSON.toJSONString(bfOrderVo), null);
+			}else{
+				String [] orderDetailIds = orderDetailId.split(",");
+				Integer [] num = new Integer[orderDetailIds.length];
+				// 转换成integer 类型
+				for(int i = 0 ; i < orderDetailIds.length; i ++){
+					orderDetailIds[i] = StringUtil.checkNullCharacters(orderDetailIds[i]);
+					// 如果是空的话跳过
+					if(StringUtil.isEmpty(orderDetailIds[i])){
+						continue;
+					}
+					num[i] = Integer.parseInt(orderDetailIds[i]);
+				}
+				List<BfOrderDetailVo> bfOrderDetailVos = bfBusinessRecordDayMapper.getOrderDayDetail(new EntityWrapper<>().in("id", num));
+				// 如果为空则跳过，否则添加到列表中
+				if(null == bfOrderDetailVos){
+					continue;
+				}
+				bfOrderVo.setBfOrderDetailVo(bfOrderDetailVos);
+			}
+		}
+		BigDecimal  sumIncome = new BigDecimal(0); // 总收入 
+		BigDecimal  sumRefund = new BigDecimal(0); // 退款
+		BigDecimal  sumPartion = new BigDecimal(0); // 平台
+		BigDecimal  total = new BigDecimal(0); // 合计
+		
+		// 未退款
+		BfOrderVos bfOrderVosNotRefund =   bfBusinessRecordDayMapper.getDayNotRefund(new EntityWrapper<>().eq("order_status", Constant.ORDER_STATUS_4).ge("create_time", morning).le("create_time", night));
+		// 未退款不为空
+		if(null != bfOrderVosNotRefund){
+			sumIncome = sumIncome.add(bfOrderVosNotRefund.getSumIncome());
+			sumPartion = sumPartion.add(bfOrderVosNotRefund.getSumPartion());
+			total = total.add(bfOrderVosNotRefund.getTotal());
+		}
+		// 已退款
+		BfOrderVos bfOrderVosRefunded =   bfBusinessRecordDayMapper.getDayNotRefund(new EntityWrapper<>().eq("order_status", Constant.ORDER_STATUS_7).ge("create_time", morning).le("create_time", night));
+		// 已退款不为空
+		if(null != bfOrderVosRefunded){
+			sumIncome = sumIncome.add(bfOrderVosRefunded.getSumIncome());
+			sumRefund = sumRefund.add(bfOrderVosRefunded.getSumRefund());
+		}
+		// 每天总收入
+		map.put("sumIncome", sumIncome);
+		// 每天退款
+		map.put("sumRefund", sumRefund);
+		// 每天平台分成
+		map.put("sumPartion", sumPartion);
+		// 合计
+		map.put("total", total);
+		// 订单
+		map.put("Order", bfOrderVos);
+		
+		baseResult = BaseResult.success();
+		// 返回查询的信息 
+		baseResult.setData(map);
+		return baseResult;
+	}
+	
+}

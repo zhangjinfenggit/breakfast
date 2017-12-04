@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hmw.open.mapper.BfBusinessRecordDayMapper">
+
+	<resultMap id="BaseResultMap" type="com.hmw.open.model.BfBusinessRecordDay">
+		<id column="id" property="id" />
+		<result column="transfer_time" property="transferTime" />
+		<result column="arrival_time" property="arrivalTime" />
+		<result column="shop_id" property="shopId" />
+		<result column="shop_name" property="shopName" />
+		<result column="transfer_money" property="transferMoney" />
+		<result column="card_name" property="cardName" />
+		<result column="card_no" property="cardNo" />
+		<result column="phone" property="phone" />
+		<result column="status" property="status" />
+		<result column="operater" property="operater" />
+		<result column="create_time" property="createTime" />
+		<result column="update_time" property="updateTime" />
+		<result column="remark" property="remark" />
+	</resultMap>
+
+    <!-- 通用查询结果列-->
+    <sql id="Base_Column_List">
+        id, transfer_time AS transferTime, arrival_time AS arrivalTime, shop_id AS shopId, shop_name AS shopName, transfer_money AS transferMoney, card_name AS cardName, card_no AS cardNo, phone, status, operater, create_time AS createTime, update_time AS updateTime, remark
+    </sql>
+    
+    <!-- 未退款部分 -->
+    <select id="getIncomeAndNotRefund" resultType="com.hmw.open.model.BfBusinessRecordDayVo">
+		SELECT
+			SUM(order_money) AS historySumIncome,	
+			SUM(platform_partion) AS historySumPartion,
+			sum(sum_income) AS total
+		FROM
+			bf_order
+			${ew.sqlSegment}
+    </select>
+    
+    <!-- 退款部分 -->
+    <select id="getIncomeAndRefunded" resultType="com.hmw.open.model.BfBusinessRecordDayVo">
+        SELECT
+        	SUM(order_money) AS historySumIncome,	
+			SUM(order_money) AS historySumRefund
+		FROM
+			bf_order
+			${ew.sqlSegment}
+    </select>
+    
+    <!-- 获得历史流水（按日） -->
+    <select id="getHistorySumRecord" resultType="com.hmw.open.model.HistroySumRecordVo">
+       SELECT
+			transfer_money AS sumTransferMoney,
+			transfer_day AS transferDay
+		FROM
+			bf_business_record_day
+		    ${ew.sqlSegment}
+    </select>
+    
+    <!-- 查看指定天的订单 -->
+    <select id="getOrderDay" resultType="com.hmw.open.model.BfOrderVo">
+        SELECT
+			order_no AS orderNo,
+			order_money AS orderMoney,
+			order_status AS orderStatus,
+			order_detail_id AS orderDetailId,
+			refund_detail AS refundDetail
+		FROM
+			bf_order
+		    ${ew.sqlSegment}
+    </select>
+    
+    <!-- 查看订单详情 -->
+    <select id="getOrderDayDetail" resultType="com.hmw.open.model.BfOrderDetailVo">
+		SELECT
+			prodcut_name AS prodcutName,
+			type AS type,
+			amount AS amount
+		FROM
+		 	bf_order_detail
+ 		    ${ew.sqlSegment}
+    </select>
+    
+    <!-- 每天未退款 -->
+    <select id="getDayNotRefund" resultType="com.hmw.open.model.BfOrderVos">
+		SELECT
+			SUM(order_money) AS sumIncome,	
+			SUM(platform_partion) AS sumPartion,
+			sum(sum_income) AS total
+		FROM
+			bf_order
+			${ew.sqlSegment}
+    </select>
+    
+    <!-- 每天退款 -->
+    <select id="getDayRefunded" resultType="com.hmw.open.model.BfOrderVos">
+		SELECT
+        	SUM(order_money) AS sumIncome,	
+			SUM(order_money) AS sumRefund
+		FROM
+			bf_order
+			${ew.sqlSegment}
+    </select>
+    
+</mapper>

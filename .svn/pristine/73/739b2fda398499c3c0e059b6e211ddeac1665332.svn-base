@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta HTTP-EQUIV="Cache-Control" CONTENT="only-if-cached">
+    <title>今天吃啥</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="css/base.css">
+</head>
+<body class="sel_foods">
+<div class="intro padding ">
+    <img class="buiness_photo" src="" alt=""/>
+    <div class="buiness_desc">
+        <h1 id="shop">珊瑚包子铺</h1>
+        <span>地址:</span>
+        <p class="adress">苏州街地铁站B1口向西50米</p>
+        <p class="look_map"><img src="images/adress.png"  alt=""><span>查看地图</span></p>
+    </div>
+</div>
+<p class="padding title">套餐:</p>
+<ul class="meal_list">
+    <li>
+        <img src="images/bao_pic.png" alt="" class="pro_pic">
+
+        <div class="meal_box">
+            <h2>A餐</h2>
+        </div>
+        <div class="sel_box">
+            <p>¥<u style="display:none;" class="meal_price">0</u><u class="unit_price">5</u></p>
+
+            <div>
+                <span class="min"><img src="images/min.png" alt=""></span>
+                <span class="meal_num" data-type="2" data-id="33">0</span>
+                <span class="add"><img src="images/add.png" alt=""></span>
+            </div>
+        </div>
+    </li>
+    <li>
+        <img src="images/bao_pic.png" alt="" class="pro_pic">
+
+        <div class="meal_box">
+            <h2>A餐</h2>
+
+            <p>包子1</p>
+
+            <p>包子2</p>
+        </div>
+        <div class="sel_box">
+            <p>¥<u style="display:none;" class="meal_price">0</u><u class="unit_price">5</u></p>
+
+            <div>
+                <span class="min"><img src="images/min.png" alt=""></span>
+                <span class="meal_num" data-type="1" data-id="22">0</span>
+                <span class="add"><img src="images/add.png" alt=""></span>
+            </div>
+        </div>
+    </li>
+    <li>
+        <img src="images/bao_pic.png" alt="" class="pro_pic">
+
+        <div class="meal_box">
+            <h2>A餐</h2>
+
+            <p>包子1</p>
+
+            <p>包子2</p>
+        </div>
+        <div class="sel_box">
+            <p>¥<u style="display:none;" class="meal_price">0</u><u class="unit_price">5</u></p>
+
+            <div>
+                <span class="min"><img src="images/min.png" alt=""></span>
+                <span class="meal_num" data-type="1" data-id="2">0</span>
+                <span class="add"><img src="images/add.png" alt=""></span>
+            </div>
+        </div>
+    </li>
+</ul>
+<div class="car_part padding">
+    <!--<img src="images/car.png" alt="" class="car">-->
+    <span>总金额：</span>
+
+    <p>¥<u class="all_price">0</u></p>
+    <input type="button" id="toOrder" value="下单" class="toOrder button hui">
+</div>
+<script src="js/jquery.js"></script>
+<script src="js/layer.js"></script>
+<script>
+    $(function () {
+
+        $("#shop").text(decodeURIComponent(GetQueryString("shopName")))
+        $(".adress").text(decodeURIComponent(GetQueryString("address")))
+        //alert(decodeURIComponent(GetQueryString("latitude")))
+        //alert(decodeURIComponent(GetQueryString("longitude")))
+        //console.log(decodeURIComponent(GetQueryString("photo")));
+        $(".buiness_photo").attr("src",decodeURIComponent(GetQueryString("photo")))
+        //判断下单按钮是否可以点击
+        isClick();
+        function isClick() {
+            var allPrice = parseFloat($('.all_price').text());
+            if (allPrice <= 0) {  //总价格为零不可点击
+                $('#toOrder').addClass('hui')
+                $('#toOrder').attr('disabled', true);
+            } else {
+                $('#toOrder').removeClass('hui')
+                $('#toOrder').attr('disabled', false);
+            }
+        }
+
+        var ip = 'localhost:8080';
+        //取值---当前店铺id
+        var shopId = GetQueryString('shopId');
+        //请求商品数据列表
+        $.ajax({
+            type: "post",
+            headers: setHeader,
+            async: false,
+            url: "http://" + ip + "/breakfastApi/weixin/queryProduct",
+            data: JSON.stringify({shopId: shopId}),
+            dataType: 'json',
+            success: function (result) {
+                if (result.retCode == '000000') {
+                    var singeProductList = result.data.singeProductList;
+                    var packageProductList = result.data.packageProductList;
+                    var str = '';
+                    for (var i = 0; i < singeProductList.length; i++) { //单品
+                        str += '\
+                        <li>\
+                            <img src="images/bao_pic.png" alt="" class="pro_pic">\
+                            <div class="meal_box">\
+                                <h2>' + singeProductList[i].singleName + '</h2>\
+                            </div>\
+                            <div class="sel_box">\
+                                <p>¥<u style="display:none;" class="meal_price">0</u><u class="unit_price">' + singeProductList[i].singleAmount + '</u></p>\
+                                <div>\
+                                    <span class="min"><img src="images/min.png" alt=""></span>\
+                                    <span class="meal_num" data-type="2" data-id="' + singeProductList[i].id + '">0</span>\
+                                    <span class="add"><img src="images/add.png" alt=""></span>\
+                                </div>\
+                            </div>\
+                        </li>'
+                    }
+                    for (var i = 0; i < packageProductList.length; i++) {   //套餐
+                        var packageList = packageProductList[i].bfSingeProductList;
+                        var str2 = '';
+                        for (var x = 0; x < packageList.length; x++) {
+                            str2 += '<p>' + packageList[x].singleName + 'x' + packageList[x].singleAmount + '</p>'
+                        }
+                        str += '\
+                        <li>\
+                            <img src="images/bao_pic.png" alt="" class="pro_pic">\
+                            <div class="meal_box">\
+                                <h2>' + packageProductList[i].packageName + '</h2>' + str2 + '\
+                            </div>\
+                            <div class="sel_box">\
+                                <p>¥<u style="display:none;" class="meal_price">0</u><u class="unit_price">' + packageProductList[i].packageAmount + '</u></p>\
+                                <div>\
+                                    <span class="min"><img src="images/min.png" alt=""></span>\
+                                    <span class="meal_num" data-type="2" data-id="' + packageProductList[i].id + '">0</span>\
+                                    <span class="add"><img src="images/add.png" alt=""></span>\
+                                </div>\
+                            </div>\
+                        </li>';
+                    }
+                    $('.meal_list').empty().html(str);
+
+                } else {
+                    setTimeoutAlert(result.retMsg);
+                }
+            }
+        })
+        var couponId = [];
+        //请求当前用户的优惠券
+        function getCoupon(allPrice, phone) {
+            $.ajax({
+                type: "post",
+                headers: setHeader,
+                url: "http://" + ip + "/breakfastApi/weixin/availableCoupon",
+                async: true,
+                data: JSON.stringify({"ordersMoney": allPrice, "phone": phone}),
+                dataType: "json",
+                success: function (result) {
+                    if (result.retCode == "000000") {
+                        setTimeoutAlert('优惠券请求成功');
+                        var list = result.data;
+                        couponId = list[0].couponId;
+                    }
+                }
+            });
+        }
+
+
+        //下单
+        toOrder()
+        function toOrder() {
+            $('#toOrder').on('click', function () {
+                var amount = $('.meal_num');
+                var allPrice = parseFloat($('.all_price').text()); //订单总金额
+                var phone = sessionStorage.getItem('phone');
+                var sessionAddress = JSON.parse(sessionStorage.getItem('key')); //取餐地址
+                var takeAddress = ""; //用户取餐地址
+                $.each(sessionAddress, function (i, val) {
+                    takeAddress += val;
+                })
+                getCoupon(allPrice, phone);
+
+                var singleList = [];    //单品数据
+                var packageList = [];   //套餐数据
+                //判断单品还是套餐，取商品id和数量
+                for (var i = 0; i < amount.length; i++) {
+                    var item = amount.eq(i);
+                    if (parseInt(item.html()) > 0) {
+                        var arr = {"id": item.attr('data-id'), "amound": item.html()};
+                        if (item.attr('data-type') == 2) {
+                            singleList.push(arr);
+                        } else if (item.attr('data-type') == 1) {
+                            packageList.push(arr);
+                        }
+                    }
+                }
+                var _data = {
+                    "orderAddress": "2626",
+                    "takeAddress": takeAddress,
+                    "shopId": shopId,
+                    "totalMoney": allPrice,
+                    "singleList": singleList,
+                    "packageList": packageList,
+                    "couponId": couponId[0],
+                    //"userId":2,
+                    "phone": sessionStorage.getItem('phone'),
+                }
+                $.ajax({
+                    type: "post",
+                    headers: setHeader,
+                    url: "http://" + ip + "/breakfastApi/weixin/saveOrder",
+                    data: JSON.stringify(_data),
+                    dataType: 'json',
+                    success: function (result) {
+                        if (result.retCode == '000000') {
+                            window.location.href = "order_confirm.html?orderId=" + result.orderNo;
+                        } else {
+                            setTimeoutAlert(result.retMsg);
+                        }
+                    }
+                });
+            })
+        }
+
+        // 购物车
+        $('.add').on("click", function () {
+            $(this).siblings('.meal_num').css('display', 'block');
+            $(this).siblings('.min').css('display', 'block');
+            var val = parseInt($(this).siblings('.meal_num').html()) + 1;
+            $(this).siblings('.meal_num').html(val);
+            // 数量
+            var meal_num = $(this).siblings('.meal_num').html();
+            // 单价
+            var unit_price = $(this).parent().siblings().find('.unit_price').html();
+            // 计算
+            var reckon = parseInt(meal_num * unit_price);
+            $(this).parent().siblings().find('.meal_price').html(reckon);
+            all_sum();
+            isClick();
+        })
+        $('.min').click(function () {
+            var val = parseInt($(this).siblings('.meal_num').html()) - 1;
+            if (parseInt(val) < 1) {
+                val = 0;
+                $(this).siblings('.meal_num').css('display', 'none');
+                $(this).css('display', 'none');
+            }
+            $(this).siblings('.meal_num').html(val);
+            // 数量
+            var meal_num = $(this).siblings('.meal_num').html();
+            // 单价
+            var unit_price = $(this).parent().siblings().find('.unit_price').html();
+            // 计算
+            var reckon = parseInt(meal_num * unit_price);
+            $(this).parent().siblings().find('.meal_price').html(reckon);
+            all_sum();
+            isClick();
+        })
+    })
+
+    function all_sum() {
+        var order = 0;
+        $('.meal_price').each(function () {
+            //循环遍历总价
+            order += parseInt($(this).html());
+        })
+        //修改总金额
+        $('.all_price').html(order);
+    }
+</script>
+</body>
+</html>

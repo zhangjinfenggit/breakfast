@@ -1,0 +1,41 @@
+$(function(){
+	
+	var weixintoken = "Header";
+	var serviceIp = window.location.host;
+	
+	var phone = "13552578263";
+	
+	
+	var _data = {
+		"phone":phone
+//		"weixintoken":weixintoken
+	}
+	$.ajax({
+		headers: setHeader,
+		type:"post",
+		url:serviceIp+"/breakfastApi/weixin/queryOrderHistory",
+		async:true,
+		data:JSON.stringify(_data),
+		dataType:"json",
+		success:function(result){
+			if(result.retCode == "000000"){
+				var list = result.data;
+				var str = "";
+				for(var i=0;i<list.length;i++){
+					var orderDetails = list[i].orderDetail.split(",");
+					var str2 = "";
+					for(var n=0;n<orderDetails.length;n++){
+						str2 +="<li>"+orderDetails[n]+"</li>";
+					}
+					str += "<li><h2>"+list[i].orderStatus+"</h2><p>店铺: <span>"+
+					list[i].shopName+"</span></p><p>订单号: <span>"+list[i].orderNo+
+					"</span></p><p>早餐:</p><ul>"+str2+"</ul>	<u></u><i>消费金额 : ¥"+list[i].totalMoney+
+					"</i></li>";
+				}
+				$("#orderList").html(str);
+			}else{
+				alert(result.retMsg)
+			}
+		}
+	});
+});

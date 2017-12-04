@@ -1,0 +1,60 @@
+package com.hmw.open.web.weixin.response.shopcontroller;
+
+import java.util.List;
+
+import com.hmw.open.model.BfPackageProduct;
+import com.hmw.open.model.BfSingeProduct;
+
+/**
+ * 封装 单品对象 和 套餐对象
+ * @author zhulei
+ * @time 2017-10-07
+ */
+public class ProductsResponse {
+
+	private Object data;
+	
+	private List<BfSingeProduct>  singeProduct;
+	
+	private List<BfPackageProduct> packageProduct;
+	
+	public ProductsResponse() {
+		super();
+		this.data = data;
+		this.singeProduct = singeProduct;
+		this.packageProduct = packageProduct;
+	}
+	
+	public ProductsResponse(Object data, List<BfSingeProduct> singeProduct,
+			List<BfPackageProduct> packageProduct) {
+		super();
+		this.data = data;
+		this.singeProduct = singeProduct;
+		this.packageProduct = packageProduct;
+	}
+
+	public Object getData() {
+		return data;
+	}
+
+	public void setData(Object data) {
+		this.data = data;
+	}
+
+	public List<BfSingeProduct> getSingeProduct() {
+		return singeProduct;
+	}
+
+	public void setSingeProduct(List<BfSingeProduct> singeProduct) {
+		this.singeProduct = singeProduct;
+	}
+
+	public List<BfPackageProduct> getPackageProduct() {
+		return packageProduct;
+	}
+
+	public void setPackageProduct(List<BfPackageProduct> packageProduct) {
+		this.packageProduct = packageProduct;
+	}
+	
+}

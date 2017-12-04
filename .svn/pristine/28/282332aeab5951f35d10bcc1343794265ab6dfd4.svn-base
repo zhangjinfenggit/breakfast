@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+    <title>快乐早餐</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<header>
+	<!--<a href="javascript:history.go(-1);"><img src="images/back.png" alt=""></a>-->
+	<p>登录</p>
+</header>
+
+<form class="register">
+	<img src = images/icon.png class ="icon"/>
+	<h1>快乐早点登录/注册 </h1>
+		<ul class = "wrap">
+	    <li> <input type="tel"  value="" placeholder="请输入手机号" name="phone" class = "phone_num"/> </li>
+	    <li> <input type ="tel" value="" placeholder = "请输入验证码" name="code" class = "code"/>
+			<input type ="button" value="获取验证码" class="send" id="send"/> </li>
+	    <li> <input type ="tel" id="recommenderPhone" value="" placeholder = "请输入邀请人手机号" name="recommenderPhone" class = "r_phone phone_num"/></li>
+	</ul>
+	<p>*输入推荐人，两人一起免费吃早餐</p>
+	<input type="button" value="登录" id="loginBtn" class="button"/>
+</form>
+<script src="js/jquery.js"></script>
+<script src="js/layer.js"></script>
+<script src="js/register.js"></script>
+</body>
+</html>

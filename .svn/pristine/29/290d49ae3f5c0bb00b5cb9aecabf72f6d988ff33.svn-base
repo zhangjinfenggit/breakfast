@@ -1,0 +1,10 @@
+package com.hmw.open.model;
+
+/**
+ * 用户信息vo
+ * @author bing.cheng
+ *
+ */
+public class UserInfoVo {
+	
+}

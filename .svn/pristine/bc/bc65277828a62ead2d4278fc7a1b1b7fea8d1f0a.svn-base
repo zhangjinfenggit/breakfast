@@ -1,0 +1,208 @@
+package com.hmw.open.service.impl;
+
+import java.util.Date;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.alibaba.fastjson.JSON;
+import com.hmw.open.common.constants.Constant;
+import com.hmw.open.common.result.BaseResult;
+import com.hmw.open.common.result.ErrorCode;
+import com.hmw.open.common.utils.DateUtils;
+import com.hmw.open.model.BfCoupon;
+import com.hmw.open.model.BfOrder;
+import com.hmw.open.model.BfOrderDetail;
+import com.hmw.open.model.BfPackageProduct;
+import com.hmw.open.model.BfShop;
+import com.hmw.open.model.BfSingeProduct;
+import com.hmw.open.model.UserBaseInfoVo;
+import com.hmw.open.service.IBfCouponProduceService;
+import com.hmw.open.service.IBfCouponService;
+import com.hmw.open.service.IBfOrderDetailService;
+import com.hmw.open.service.IBfOrderService;
+import com.hmw.open.service.IBfPackageProductService;
+import com.hmw.open.service.IBfShopService;
+import com.hmw.open.service.IBfSingeProductService;
+import com.hmw.open.service.IBfUserWeixinService;
+import com.hmw.open.web.weixin.request.ordercontroller.PackProduct;
+import com.hmw.open.web.weixin.request.ordercontroller.SaveOrderRequest;
+import com.hmw.open.web.weixin.request.ordercontroller.SingleProduct;
+
+/**
+ * 
+ * @author zhulei
+ * @time 2017-10-07
+ */
+@Service
+public class WeiXinOrderService {
+
+	private final static Logger logger = Logger.getLogger(WeiXinOrderService.class);
+	
+	@Autowired
+	IBfCouponProduceService bfCouponProduceService;
+	
+	@Autowired
+	IBfUserWeixinService bfUserWeixinService;
+	
+	@Autowired
+	IBfCouponService bfCouponService;
+	
+	@Autowired
+	IBfShopService bfShopService;
+	
+	@Autowired
+	IBfPackageProductService bfPackageProductService;
+	
+	@Autowired
+	IBfSingeProductService bfSingleProductService;
+	
+	@Autowired
+	IBfOrderService bfOrderService;
+	
+	@Autowired
+	IBfOrderDetailService bfOrderDetailService;
+	
+	
+	
+	
+	
+	/**
+	 * 用户下单操作
+	 */
+	@Transactional
+	public BaseResult saveOrder(SaveOrderRequest form,UserBaseInfoVo userVo) throws Exception{
+		logger.error("参数：" + JSON.toJSONString(form), null);
+
+		BaseResult baseResult = BaseResult.success();
+		if (null == form ||form.getShopId()==null||form.getTotalMoney()==null) {
+			logger.error("存在空参数" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		if(form.getTotalMoney().floatValue()<=0){
+			logger.error("总金额小于0" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		if(form.getPackProductList()==null ||form.getSingleProductList()==null){
+			logger.error("没有任何产品" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		if(form.getPackProductList() !=null || !form.getPackProductList().isEmpty()){
+			logger.error("套餐为0" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		if(form.getSingleProductList() != null || !form.getSingleProductList().isEmpty()){
+			logger.error("单品为0" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		BfShop shop = bfShopService.selectById(form.getShopId());
+		if(shop == null){
+			logger.error("找不到shop" );
+			return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+		}
+		
+		BfCoupon coupon = null;
+		if(form.getCouponId()!=null){
+			coupon =  bfCouponService.selectById(form.getCouponId());
+		}
+		
+		//todo 
+		//验证单子上的总金额 = 每个产品的金额*数量 的总和是否一致 +优惠金额
+		
+		
+		
+		//验证套餐id ，单价是否一致
+		if(form.getPackProductList()!=null && !form.getPackProductList().isEmpty()){
+			for(PackProduct formPackProduct:form.getPackProductList()){
+				BfPackageProduct packProduct = bfPackageProductService.selectById(formPackProduct.getId());
+				if(packProduct == null){
+					logger.error("找不到套餐:"+formPackProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+				if(packProduct.getPackageMoney().floatValue() <=0 || 
+						packProduct.getPackageMoney().floatValue() != formPackProduct.getPackageMoney().floatValue() ){
+					logger.error("套餐价格不对:"+formPackProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+			}
+		}
+		
+		//验证单品id ，单价是否一致
+		if(form.getSingleProductList()!=null && !form.getSingleProductList().isEmpty()){
+			for( SingleProduct formSingleProduct:form.getSingleProductList()){
+				 BfSingeProduct singeProduct = bfSingleProductService.selectById(formSingleProduct.getId());
+				if(singeProduct == null){
+					logger.error("找不到单品:"+formSingleProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+				if(singeProduct.getSingleMoney().floatValue() <=0 || 
+						singeProduct.getSingleMoney().floatValue() != formSingleProduct.getSingleMoney().floatValue() ){
+					logger.error("单品价格不对:"+formSingleProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+			}
+		}
+		//todo
+		//插入单子详情表，拼写单子详情字段和id列表
+		//先插入套餐订单详情表中
+		if(form.getPackProductList()!=null && !form.getPackProductList().isEmpty()){
+			for(PackProduct formPackProduct:form.getPackProductList()){
+				BfPackageProduct packProduct = bfPackageProductService.selectById(formPackProduct.getId());
+				if(packProduct == null){
+					logger.error("找不到套餐:"+formPackProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+				BfOrderDetail orderDetail = new BfOrderDetail();
+				orderDetail.setProductId(formPackProduct.getId());
+				orderDetail.setProdcutName(packProduct.getName());
+				orderDetail.setType(Constant.ORDER_TYPE_2);
+				orderDetail.setAmount(formPackProduct.getAmount().intValue());
+				orderDetail.setCreateTime(new Date());
+				bfOrderDetailService.insert(orderDetail);
+			}
+		}
+		//插入单品信息在订单详情表中
+		if(form.getSingleProductList()!=null && !form.getSingleProductList().isEmpty()){
+			for( SingleProduct formSingleProduct:form.getSingleProductList()){
+				 BfSingeProduct singeProduct = bfSingleProductService.selectById(formSingleProduct.getId());
+				if(singeProduct == null){
+					logger.error("找不到单品:"+formSingleProduct.getId() );
+					return BaseResult.fail(ErrorCode.ParaCheckErrorRetCode, ErrorCode.ParaCheckErrorRetInfo);
+				}
+				BfOrderDetail orderDetail = new BfOrderDetail();
+				orderDetail.setProductId(formSingleProduct.getId());
+				orderDetail.setProdcutName(singeProduct.getSingleName());
+				orderDetail.setType(Constant.ORDER_TYPE_1);
+				orderDetail.setAmount(formSingleProduct.getAmount().intValue());
+				orderDetail.setCreateTime(new Date());
+				bfOrderDetailService.insert(orderDetail);
+			}
+		}
+		
+		//TODO 下单订单号规则：精确到毫秒,待定
+		String orderNo = DateUtils.getString30(new Date());
+		BfOrder order = new BfOrder();
+		order.setOrderNo(orderNo);
+		order.setOrderTime(new Date());//下单时间
+		order.setShopId(form.getShopId());
+		order.setShopName(shop.getName());
+		order.setUserId(userVo.getUserTableId());
+		order.setPhone(userVo.getPhone());
+		order.setOrderStatus(Constant.ORDER_STATUS_1);//待支付
+		order.setOrderMoney(form.getTotalMoney());
+		if(form.getCouponId()==null){
+			order.setCouponId(null);
+			order.setCouponDetail(null);
+		}else{			
+			order.setCouponId(form.getCouponId());
+			order.setCouponDetail(coupon.getCouponMessage());
+		}
+		order.setOrderDetail("A 套餐 1份");
+		bfOrderService.insert(order);
+		
+		return baseResult.success();
+	}
+
+}

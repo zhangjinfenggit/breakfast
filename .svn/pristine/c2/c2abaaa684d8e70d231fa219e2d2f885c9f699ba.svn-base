@@ -1,0 +1,255 @@
+package com.hmw.open.service.impl;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import com.baomidou.mybatisplus.mapper.Wrapper;
+import com.hmw.open.common.constants.Constant;
+import com.hmw.open.common.result.BaseResult;
+import com.hmw.open.common.result.ErrorCode;
+import com.hmw.open.common.result.MerchantsInfoErrorCode;
+import com.hmw.open.model.BfOrder;
+import com.hmw.open.model.BfPackageProduct;
+import com.hmw.open.model.BfShop;
+import com.hmw.open.model.BfSingeProduct;
+import com.hmw.open.model.UserBaseInfoVo;
+import com.hmw.open.service.IBfOrderService;
+import com.hmw.open.service.IBfPackageProductService;
+import com.hmw.open.service.IBfShopService;
+import com.hmw.open.service.IBfSingeProductService;
+import com.hmw.open.web.app.request.merchantsinfocontroller.AddBankcardRequest;
+import com.hmw.open.web.app.request.merchantsinfocontroller.OpenOrCloseGoodRequest;
+import com.hmw.open.web.app.request.merchantsinfocontroller.OrderDealRequest;
+import com.hmw.open.web.app.request.merchantsinfocontroller.openOrCloseShopRequest;
+import com.hmw.open.web.app.response.merchantsinfocontroller.MerchantsInfoResponse;
+
+/***
+ * AppMerchantsInfoService
+ * @author kongliufeng
+ *
+ */
+@Service
+public class AppMerchantsInfoServiceImpl {
+	private final static Logger logger = Logger.getLogger(AppLoginServiceImpl.class);
+	@Resource
+	RedisTemplate<String, String> redisTemplate;
+	
+	@Autowired
+	IBfShopService iBfShopService;
+	
+	@Autowired
+	IBfOrderService iBfOrderService;
+	
+	@Autowired
+	IBfPackageProductService iBfPackageProductService;
+	
+	@Autowired
+	IBfSingeProductService iBfSingeProductService;
+	
+	/***
+	 * 获取商家信息
+	 * @param request
+	 * @return
+	 */
+	public BaseResult getMerchantsInfo(UserBaseInfoVo userBaseInfoVo) throws Exception{
+		BaseResult baseResult = null;
+		MerchantsInfoResponse Response = new MerchantsInfoResponse();
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", userBaseInfoVo.getPhone());
+		BfShop shopInfo = iBfShopService.selectOne(wrapper);	
+		if(shopInfo ==null){
+			logger.error(MerchantsInfoErrorCode.MerchantsInfoNull);
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+			}else{
+			//封装返回信息
+			Response.setId(shopInfo.getId());
+			Response.setName(shopInfo.getName());
+			Response.setAddress(shopInfo.getAddress());
+			Response.setPhone(shopInfo.getPhone());
+			Response.setPhoto(shopInfo.getPhoto());
+			Response.setPosition(shopInfo.getPosition());
+			Response.setCardNo(shopInfo.getCardNo());
+			Response.setCertifiedStatus(shopInfo.getCertifiedStatus());
+		}
+		
+		baseResult = BaseResult.success();
+		baseResult.setData(Response);
+		return baseResult;
+	}
+	
+	/***
+	 * 订单处理：根据订单号获取订单信息，重置订单状态
+	 * @param form
+	 * @return
+	 */
+	public BaseResult orderDeal(OrderDealRequest form,UserBaseInfoVo userVo) throws Exception{
+		//根据订单号获取订单信息
+		Wrapper<BfOrder> wrapper = new EntityWrapper<BfOrder>();
+		wrapper.eq("order_no", form.getOrderNo());
+		BfOrder order = iBfOrderService.selectOne(wrapper);
+		
+		//重置订单状态码
+		//数据库中OrderStatus订单状态：1、待支付，2、已支付，3、已备餐，4、已完成，5、未退款，6、退款中，7、已退款'
+		//OpType表示操作：1 备餐完成、2 取消订单、3领取、4同意退款、5 拒绝
+		
+//		第一种：
+//		1、用户下单成功→订单到商家app新订单中→商家点击取消订单→后台直接走退款→向用户发送微信通知（此时此订单在商家我的订单中就看不到了）
+//		第二种：
+//		商家点击已领取→用户会收到已领取的微信通知（此时这一订单在商家app我的订单中所有位置都应该是看不到的）→此通知可以跳转到申请退款页面→用户发起申请退款后→订单出现在商家app：我的订单>退款申请中→ 商家点击同意，订单消失（后台发起退款）→商家拒绝，订单消失（不发起退款），发微信通知告诉用户退款申请被拒绝的消息
+		
+		//根据OpType操作码，执行不同操作
+		if(form.getOpType().equals(Constant.OPTYPE_1)){//备餐完成：更改订单状态码
+			order.setOrderStatus(Constant.ORDER_STATUS_3);
+		}else if(form.getOpType().equals(Constant.OPTYPE_2)){// 取消订单：更改订单状态码，并设置取消理由
+			// 商家点击取消订单→后台直接走退款→向用户发送微信通知（此时此订单在商家我的订单中就看不到了）
+			order.setOrderStatus(Constant.ORDER_STATUS_4);
+			order.setCancleMessage(form.getCancleMessage());
+		}else if(form.getOpType().equals(Constant.OPTYPE_3)){// 领取：更改订单状态码
+			order.setOrderStatus(Constant.ORDER_STATUS_4);
+		}else if(form.getOpType().equals(Constant.OPTYPE_4)){// 同意退款：更改订单状态码
+			order.setOrderStatus(Constant.ORDER_STATUS_6);
+		}else if(form.getOpType().equals(Constant.OPTYPE_5)){// 拒绝：更改订单状态码，将订单状态更改为4，并设置拒绝理由
+			order.setOrderStatus(Constant.ORDER_STATUS_4);
+			order.setRefundDetail(form.getRefundDetail());
+		}
+		
+		//更新数据库
+		iBfOrderService.updateById(order);
+		return BaseResult.success();
+	}
+	
+	/***
+	 * 添加银行卡 ： 根据token获取当前商家信息，再根据商家id添加银行卡信息（没有写对开户人和银行卡核对，没有银行接口）
+	 * @param form
+	 * @return
+	 */
+	public BaseResult addBankcard(AddBankcardRequest form,UserBaseInfoVo userVo) throws Exception {
+		// 验证是否开户人和银行卡 （无验证接口所以注释）
+		String phone = userVo.getPhone();
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		if(shop==null){
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		
+		////根据商家id添加银行卡信息
+		shop.setCardName(form.getCardName());
+		shop.setCardNo(form.getCardNo());
+
+		iBfShopService.updateById(shop);
+		return BaseResult.success();	
+	}
+
+	/***
+	 * 打烊或开店 ： 通过token获取商家信息，反置getBusinessStatus(1.营业中，2.打烊)字段
+	 * @param form
+	 * @return
+	 */
+	public BaseResult openOrCloseShop(openOrCloseShopRequest form,	UserBaseInfoVo userVo) throws Exception{
+		//根据token获取当前商家信息
+		
+		String phone = userVo.getPhone();
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		
+		//查看当前状态，并更改
+		if(shop.getBusinessStatus().equals("1")){
+			shop.setBusinessStatus("2");
+		}else if(shop.getBusinessStatus().equals("2")){
+			shop.setBusinessStatus("1");
+		}
+		
+		iBfShopService.updateById(shop);
+		
+		try {
+			redisTemplate.opsForValue().set(AppShopServiceImpl.REDIS_PRODUCT + shop.getId(), null);
+
+		} catch (Exception e) {
+
+			logger.error("商品信息缓存异常, 方法名为 ： setPackageProduct ", e);
+
+		}
+		
+		return BaseResult.success();	
+	}
+	
+	/***
+	 * 售罄或补货:根据operationCode操作标识码(1.表示操作售罄,2.表示操作补货),执行不同操作
+	 *         根据type类型标识码(1.表示商品，2.表示套餐),对不同表操作
+	 * @param form
+	 * @return
+	 * @throws Exception
+	 */
+	public BaseResult openOrCloseGood(OpenOrCloseGoodRequest form,UserBaseInfoVo userVo) throws Exception{
+		//根据操作标识码(1.表示操作售罄,2.表示操作补货),执行不同操作
+		if(form.getOperationCode()==1){
+			//根据类型标识码(1.表示商品，2.表示套餐),对不同表操作
+			if(form.getType()==2){
+				Wrapper<BfPackageProduct> wrapper = new EntityWrapper<BfPackageProduct>();
+				wrapper.eq("id",form.getId());
+				BfPackageProduct packageProduct = iBfPackageProductService.selectOne(wrapper);
+				//状态置为售罄
+				packageProduct.setRealAmount(0);
+				packageProduct.setPackStatus(2);
+				//更新
+				iBfPackageProductService.updateById(packageProduct);	
+			}else if(form.getType()==1){
+				Wrapper<BfSingeProduct> wrapper = new EntityWrapper<BfSingeProduct>();
+				wrapper.eq("id",form.getId());
+				BfSingeProduct singeProduct = iBfSingeProductService.selectOne(wrapper);
+				//状态置为售罄
+				singeProduct.setRealAmount(0);
+				singeProduct.setStatus("2");
+				//更新
+				iBfSingeProductService.updateById(singeProduct);	
+			}
+		}else if(form.getOperationCode()==2){
+			//根据类型标识码(1.表示商品，2.表示套餐),对不同表操作
+			if(form.getType()==2){
+				Wrapper<BfPackageProduct> wrapper = new EntityWrapper<BfPackageProduct>();
+				wrapper.eq("id",form.getId());
+				BfPackageProduct packageProduct = iBfPackageProductService.selectOne(wrapper);
+				//剩余数量置为预售数量,状态更新售卖中
+				packageProduct.setRealAmount(packageProduct.getPackageAmount());
+				packageProduct.setPackStatus(1);
+				//更新
+				iBfPackageProductService.updateById(packageProduct);
+			}else if(form.getType()==1){
+				Wrapper<BfSingeProduct> wrapper = new EntityWrapper<BfSingeProduct>();
+				wrapper.eq("id",form.getId());
+				BfSingeProduct singeProduct = iBfSingeProductService.selectOne(wrapper);
+				//剩余数量置为预售数量，状态更新售卖中
+				singeProduct.setRealAmount(singeProduct.getSingleAmount());
+				singeProduct.setStatus("1");
+				//更新
+				iBfSingeProductService.updateById(singeProduct);
+			}
+		}
+		//补货时更新缓存中的信息
+		String phone = null;
+		phone = userVo.getPhone();
+
+		Wrapper<BfShop> wrapper = new EntityWrapper<BfShop>();
+		wrapper.eq("phone", phone);
+		BfShop shop = iBfShopService.selectOne(wrapper);
+		if (shop == null) {
+			return BaseResult.fail(ErrorCode.NullPointerExceptionRetInfo, ErrorCode.NullPointerExceptionRetCode);
+		}
+		try {
+			redisTemplate.opsForValue().set(AppShopServiceImpl.REDIS_PRODUCT + shop.getId(), null);
+		} catch (Exception e) {
+
+			logger.error("商品信息缓存异常, 方法名为 ： setPackageProduct ", e);
+
+		}
+		return BaseResult.success();
+	}
+
+}

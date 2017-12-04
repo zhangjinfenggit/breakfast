@@ -1,0 +1,55 @@
+$(function(){
+	// 退款原因选择
+	$('.que_list li').click(function(){
+		$(this).addClass('current').siblings().removeClass('current');
+	})
+	// 优惠券
+	$('.coupon_list li').click(function(){
+		$(this).find('img.current').css('display','block').parent().siblings().find('img.current').css('display','none');
+		setTimeout("location.href='order_confirm.html'",300);
+	})
+	/*// 购物车
+	$('.add').click(function(){
+		$(this).siblings('.meal_num').css('display','block');
+		$(this).siblings('.min').css('display','block');
+		var val =parseInt($(this).siblings('.meal_num').html())+1;
+		$(this).siblings('.meal_num').html(val);
+		// 数量
+		var meal_num = $(this).siblings('.meal_num').html();
+		// 单价
+		var unit_price = $(this).parent().siblings().find('.unit_price').html();
+		// 计算
+		var reckon = parseInt(meal_num*unit_price);
+		$(this).parent().siblings().find('.meal_price').html(reckon);
+		all_sum();
+	})
+	$('.min').click(function(){
+		var val =parseInt($(this).siblings('.meal_num').html())-1;
+		if(parseInt(val)<1)
+		{ 
+			val = 0;
+			$(this).siblings('.meal_num').css('display','none');
+			$(this).css('display','none'); 	
+		} 
+		$(this).siblings('.meal_num').html(val);
+		// 数量
+		var meal_num = $(this).siblings('.meal_num').html();
+		// 单价
+		var unit_price = $(this).parent().siblings().find('.unit_price').html();
+		// 计算
+		var reckon = parseInt(meal_num*unit_price);
+		$(this).parent().siblings().find('.meal_price').html(reckon);
+		all_sum();
+	})*/
+})
+
+/*function all_sum(){
+	var order = 0;
+	$('.meal_price').each(function(){
+		//循环遍历总价
+		order += parseInt($(this).html());
+	})
+	//修改总金额
+	$('.all_price').html(order);
+}*/
+

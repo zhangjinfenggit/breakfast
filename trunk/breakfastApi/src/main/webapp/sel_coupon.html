@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
+    <title>快乐早点</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+    <meta name="keywords" content=""/>
+    <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<ul id="couponList" class="coupon_list"></ul>
+<script src="js/jquery.js"></script>
+<script src="js/layer.js"></script>
+<!--<script src="js/sel_coupon.js"></script>-->
+<script>
+    $(function () {
+        $('body').append("<script src='js/sel_coupon.js?time="+new Date().getTime()+"'><\/script>");
+    })
+</script>
+</body>
+</html>

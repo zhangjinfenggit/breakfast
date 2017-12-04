@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hmw.open.mapper.BfCouponCallbackFailMapper">
+
+	<resultMap id="BaseResultMap" type="com.hmw.open.model.BfCouponCallbackFail">
+		<id column="id" property="id" />
+		<result column="coupon_id" property="couponId" />
+		<result column="coupon_name" property="couponName" />
+		<result column="coupon_monry" property="couponMonry" />
+		<result column="coupon_code" property="couponCode" />
+		<result column="user_id" property="userId" />
+		<result column="phone" property="phone" />
+		<result column="callback_fail_msg" property="callbackFailMsg" />
+		<result column="managed_flag" property="managedFlag" />
+		<result column="create_time" property="createTime" />
+		<result column="update_time" property="updateTime" />
+	</resultMap>
+
+    <!-- 通用查询结果列-->
+    <sql id="Base_Column_List">
+        id, coupon_id AS couponId, coupon_name AS couponName, coupon_monry AS couponMonry, coupon_code AS couponCode, user_id AS userId, phone, callback_fail_msg As callbackFailMsg, managed_flag AS managedFlag, create_time AS createTime, update_time AS updateTime
+    </sql>
+</mapper>

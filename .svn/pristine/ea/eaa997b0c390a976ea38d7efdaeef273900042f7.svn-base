@@ -1,0 +1,215 @@
+@charset "utf-8";
+html { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;}
+input[type="text"],input[type="submit"],input[type="reset"],input[type="button"],input{-webkit-appearance:none; resize: none;}
+body,div,ul,li,ol,h1,h2,h3,h4,h5,h6,input,textarea,select,p,dl,dt,dd,a,img,button,form,table,th,tr,td,tbody,article, 
+aside, details,figcaption,figure,footer,header, menu,nav,section{ -webkit-tap-highlight-color:transparent; }
+*{padding:0; margin:0; list-style:none; font-family:"STXihei", Arial, Helvetica, sans-serif;font-weight:normal;font-size: 16px; max-width: 760px; letter-spacing: 0.5px;}
+img{display: block; background: transparent;}
+input{border:0; height: 60px; background: transparent;}
+a,u{text-decoration: none;}
+body{background: #f8f8f8;}
+i,em{font-style:normal}
+::-webkit-scrollbar{display: none;}
+
+.button{width: 80%; height: 40px; border-radius: 40px; background: #e5bc0c; color: #fff; margin:0 auto; display: block; font-weight: 600;}
+.padding{padding:0 5%; box-sizing:border-box;}
+.buiness_photo{width: 37%; float: left;}
+.ofellipsis{text-overflow: ellipsis;white-space: nowrap;overflow: hidden;}
+
+header{width: 100%; height: 45px; background: url(../images/header_pic.png);background-size:cover;}
+header a{width:40px;height:45px;position: absolute; top: 0; left: 0;background:url(../images/back.png) no-repeat center ;background-size:20px;}
+header p{color: #fff; text-align:center; line-height:45px; font-weight: 600;}
+
+/*登陆*/
+.register .icon{width: 32%; margin: 10% auto 5%; dispay: block; }
+.register h1{font-size:14px;text-align:center;line-height: 26px; color: #3c3c3c;}
+.register .wrap{width:80%; margin: 10% auto 0;}
+.register .wrap li {width: 100%;margin-bottom: 10px;}
+.register .wrap li input {width: 100%; height: 14px; border: 1px solid #a5a5a4; background: #FFF ; text-align:center; font-size: 14px; padding: 14.5px 0;}
+.register .wrap li:nth-child(2){clear: both;overflow: hidden;}
+.register .wrap li .code{width: 55%; height: 14px; float:left}
+.register .wrap li .send{width: 42%; height:40px; float: right; margin-top:2px; line-height: 40px; background: #e5bc0c; color: #fff; border: none; font-weight: 600; padding:0;}
+.register .wrap li input {border-radius: 4px;}
+.register p{font-size: 12px; line-height: 20px; text-align: center; color: #999;}
+.register .button{margin-top: 10%; font-weight: 600;margin-bottom:20px;}
+
+/*申请退款*/
+.return_money{padding:0 5%;}
+.return_money .top{width: 100%; padding:5% 0 3%; border-bottom: 1px solid #bbb;}
+.return_money .top p{color: #666; font-size: 14px;}
+.return_money .que_list{margin-top: 5%;}
+.return_money .que_list li{overflow: hidden; margin-bottom: 3%;}
+.return_money .que_list li span{width: 18px; height: 18px; background: url(../images/check.png); background-size: cover; display: block; float: left; margin:3px 10px 0 0;}
+.return_money .que_list li.current span{width: 18px; height: 18px; background: url(../images/checked.png); background-size: cover; display: block; float: left; margin:3px 10px 0 0;}
+.return_money .que_list li p{float: left;}
+.return_money .text_input{width: 100%; height: 45px; border:1px solid #cecece; margin:5% 0; font-size: 14px; padding-left: 10px; box-sizing:border-box; }
+.return_money .file_box{position: relative; margin-top: 5%; height: 240px;}
+.return_money .wrap{width: 100%; height: 150px; border:1px dashed #e5bc0c; position: absolute; top: 0; overflow: hidden;}
+.return_money .wrap img{position: absolute; top: 0; left: 0;}
+.return_money .wrap p{color: #e5bc0c; line-height: 150px; text-align: center;}
+.return_money .wrap i{font-size: 40px; font-style: normal;}
+.return_money .file_input{width:100%; height: 150px; opacity: 0; position: absolute; top: 0;}
+.return_money .file_box span{color: #f18b8b; font-size: 13px; position: absolute; top: 160px;}
+
+/*消费历史*/
+.buy_list>li{margin-bottom: 10px; overflow: hidden; background: #fff; padding:10px 5%; }
+.buy_list h2{color: #6ace67; font-size: 18px;  margin-bottom: 5px; font-weight: 600;}
+.buy_list h2.return{color: #f18b8b;}
+.buy_list>li p{line-height: 26px; color: #666; font-size: 14px; font-weight: 600;}
+.buy_list>li p span{color: #666; font-size: 14px;}
+.buy_list>li ul{padding-left: 10px;}
+.buy_list>li ul li{color: #666;line-height: 25px; border-bottom: 1px solid #e8e7e7;}
+.buy_list>li ul li:nth-last-child(1){
+	border-bottom: 0;
+}
+.buy_list>li ul li span {display: inline-block;width:32%; line-height: 30px;}
+.buy_list>li ul li span:nth-child(2){
+	text-align: right;
+}
+.buy_list>li ul li span:nth-child(3){
+	text-align: right;
+}
+.buy_list u{display: block; width: 100%; height: 1px; background: #ddd; margin:5px 0; text-decoration: none;}
+.buy_list i{float: right; font-style: normal; font-size: 14px; color: #666; margin:8px 0;}
+
+.package_detail{line-height: 8px!important; margin-bottom: 10px; display:block;}
+.package_detail a{font-size: 12px; margin-left: 5px; color: #999;}
+/*订单确认*/
+.order_confirm .take_place{width: 100%; height: auto; background: #fff; border-bottom: 1px solid #cecece; padding-top:3%; padding-bottom: 5%;}
+.order_confirm  h1{ !important; background: transparent; margin-bottom: 5%; color: #3c3c3c; /*font-size: 14px;*/ width: 90%; margin:0 auto; height: 30px; line-height: 30px; font-weight: 600;}
+.order_confirm .take_place p{margin:0 auto 2%; text-align: center; overflow: hidden; background: transparent;}
+.order_confirm .take_place p a{float: left; background: transparent;color:#e5bc0c; font-size:12px; /*margin-top: 1px;*/}
+.order_confirm .name img{display:inline-block;vertical-align:middle;width: 20px;margin-right: 5px;}
+.order_confirm .name span{font-size: 18px; color: #666;}
+.order_confirm .adress{line-height: 30px; color: #999; font-size: 14px;}
+.order_confirm .look_map{width: 73px; height: 18px; padding-bottom: 2%; margin-bottom: 0!important;}
+.order_confirm .look_map img{width: 17px; float: left; margin-right: 3px;}
+.order_confirm .look_map span{color: #e5bc0c; font-size: 14px;}
+.order_confirm .line{width: 60%; height: 9px; border-bottom: 1px solid #bfbfbf; margin:2% auto; text-align: center;}
+.order_confirm .line a{padding:0 10px; background: #f8f8f8; font-size: 12px; color: #666;}
+.order_list{background: #fff; margin-top: 4%;}
+.order_list li{background: #fff;}
+.order_list>li{padding:3% 0; border-bottom: 1px solid #ddd;}
+.order_list>li:nth-last-child(1){border:0;}
+.order_list>li p{ overflow: hidden;}
+.order_list>li p span{width: 33.3333%;float: left; text-align: center;color:#3c3c3c; font-weight: 600; }
+.order_list>li p span:nth-child(1){text-align: left;}
+.order_list>li p span:nth-child(3){text-align: right;}
+.order_list>li p span u{text-decoration: none; font-weight: 600;}
+.order_list>li ul{margin-top: 5px;}
+.order_list>li ul li{font-size: 12px; line-height: 18px; padding-left: 10px;color:#999;}
+.count_list{background: #fff; margin-top: 3%; margin-bottom: 5%;}
+.count_list li{background: #fff; height: 45px; line-height: 45px; border-bottom: 1px solid #ddd;}
+.count_list li:nth-last-child(1){border-bottom: 0;}
+.count_list li div{float: right; width:50%;height:45px;overflow: hidden; color: #fd8888;text-align: right;}
+.count_list li div{color:#fd8888;}
+.count_list li div .noCoupon{color:#999; font-size: 14px;}
+.count_list li div span u{color: #fd8888;text-decoration: none; background: transparent;}
+.count_list li div img{width: 8px; float: right; margin:17px 0 0 3px;}
+.result{float: right;  ;}
+.result u{text-decoration: none; }
+.buy_more{text-decoration: none; text-align: center; margin:3% auto 8%; display: block;color: #8c8c8c; font-size: 14px;}
+
+/*选择优惠券弹窗*/
+.dialog{position: fixed;left: 0;top: 0;width: 100%;height: 100%;background: #fff;z-index: 999;display:none;}
+.coupon_list .noCoupon{text-align: center;padding-top:50px;font-size:14px;}
+.coupon_list .item{width: 100%; height: 100px;background:#fff; overflow: hidden; margin-bottom: 10px; position: relative;}
+.coupon{width:20%; float: left; margin:12px 5%;}
+.cou_desc{width:60%; border-left: 1px solid #e5bc0c; float: left; padding:10px 0 10px 20px;}
+.cou_desc p{font-size: 14px;  ; color: #666;}
+.coupon_list p.cou_price{color: #f18b8b; font-size: 20px;}
+.coupon_list span{font-size: 12px; display: block;}
+.coupon_list .current{position: absolute; bottom:0; right: 0; width: 20px; display: none;}
+.coupon_list .cur .current{display: block;}
+
+
+
+/*今天吃啥*/
+.sel_foods .intro{background: #fff; width: 100%; padding-top:5%; padding-bottom: 5%; border-bottom: 1px solid #cecece; overflow: hidden; position: relative;display:-webkit-box;}
+.sel_foods .buiness_desc{-webkit-box-flex: 1;padding-left: 3%;}
+.sel_foods h1{ background: #fff; margin-bottom: 3%; padding-top: 5%;}
+.sel_foods .buiness_desc span{font-size: 14px; color: #777; }
+.sel_foods .adress{font-size: 14px; margin-top: 10px;color: #777; }
+.sel_foods .look_map{width: 82px; position: absolute; bottom: 15%; right: 5%;}
+.sel_foods .look_map img{width: 20px; float: left; margin-right: 3px; margin-top: -1px;}
+.sel_foods .look_map a{color: #e5bc0c; font-size: 14px;}
+.sel_foods .title{line-height: 35px;display: none;}
+.sel_foods .packageList{padding-bottom: 70px;}
+.sel_foods .meal_list li{/*height: 120px; */overflow: hidden; background: #fff; margin-bottom: 10px; padding:3% 5%;}
+.sel_foods .pro_pic{width: 70px; float:left;/* margin-top:10px;*/}
+.sel_foods .meal_box{float: left; padding-top:1px; margin-left: 10px;}
+.sel_foods h2{ ; margin-bottom:3px; font-size: 18px; height: 18px;}
+.sel_foods .meal_box p{font-size: 12px; float: left; margin:2.5px 5px 2.5px 0; color: #999;}
+.sel_foods .sel_box{/*float: right;*/ margin-left: 80px; /*padding-top: 5px;*/ overflow: hidden;}
+.sel_foods .sel_box p{color: #fd8888; font-size: 20px; /*margin-bottom: 10px;*/ text-align: right; float: left; }
+.sel_foods .sel_box p u{color: #fd8888; text-decoration: none; font-size:21px;}
+.sel_foods .sel_box div{/*overflow: hidden;*/ float: right;}
+.sel_foods .sel_box div span{float: right;}
+.sel_foods .meal_num{margin:0 15px; font-size: 18px; height: 24px; line-height: 28px; display: none;}
+.sel_foods .min{display: none;}
+.sel_foods .add img,.min img{width: 22px; height: 22px; margin-top: 2px;}
+.sel_foods .car_part{width: 100%; height: 60px; background: #fff; position: fixed; bottom: 0; left: 0; overflow: hidden; border-top: 1px solid #cecece;}
+.sel_foods .car{width: 30px; float: left; margin:15px 10px 0 0;}
+.sel_foods .car_part p{float: left; font-size: 18px;line-height:60px;max-width:33%;}
+.sel_foods .car_part span{float: left; font-size: 16px; line-height:60px;}
+.sel_foods .car_part p u{text-decoration: none;line-height:60px; font-size: 20px;}
+.sel_foods .button{width:44%; height: 36px; border-right: 36px; float: right; margin-top: 12px; font-weight: 600;}
+.sel_foods .button.hui{background:#ccc;}
+
+.singleList h2{margin-top: 5px;}
+.singleList .sel_box{padding-top: 5px;}
+/*今天去哪吃*/
+.sel_adress{padding-top:5%; background: #fff; height: 180px; border-bottom: 1px solid #ddd;}
+.sel_adress .top{overflow: hidden; background: #fff;  padding:0 5%;}
+.sel_adress .top img{float: left; width: 26px; margin-right: 3px; margin-left: -6px;}
+.sel_adress .top span{float: left; margin-top: 2px; color: #3c3c3c;}
+.sel_adress .sel_box{text-align: center; margin:20px 0 10px;}
+.sel_adress select{width: 30%; height: 40px; font-size: 14px; padding-left: 2%; box-sizing:border-box;  border: solid 0.8px #a5a5a4; appearance:none; -moz-appearance:none; -webkit-appearance:none; border-radius: 2px; background: url(../images/arrow.png) no-repeat scroll 92% center transparent; background-size: 14px; color: #666;}
+.sel_adress select::-ms-expand { display: none; }
+.sel_adress option{text-align: center; line-height: 24px; font-size: 14px;}
+.sel_adress .button{margin-top: 26px; font-weight: 600;}
+.sel_shops_list{padding-bottom: 5%;}
+.sel_shops_list li{padding:3% 5%; min-height: 85px; overflow: hidden; background: #fff; margin-bottom: 10px; position: relative;display: -webkit-box;}
+.tip{color: #f18b8b; font-size: 12px; text-align: center; line-height: 35px;}
+.tip span{font-size: 12px;}
+.buiness_photo{width:100px;height:100px;display: inline-block;vertical-align:middle;float:none;}
+.buiness_desc{-webkit-box-flex:1;padding-left: 3%;}
+.sel_shops_list h1{ background: #fff; margin-bottom: 3%; margin-top: 5px; font-size: 16px;}
+.sel_shops_list .adress{color: #777!important; font-size: 13px!important; margin-top: 10px;}
+.sel_shops_list .shopAddress{color: #777; font-size: 13px; margin-top: 10px;}
+.sel_shops_list .button2{display:block;width: 40%; height: 30px;line-height:30px; border-radius: 30px; font-size: 13px; margin-top: 5%;text-align:center; font-weight: 600; position: absolute; bottom:9%; left: 45%;}
+
+
+@media only screen and (max-width: 320px){
+	.register .icon{
+		width: 30%; margin-top: 8%;
+	}
+	.register .wrap{
+		margin-top: 5%;
+	}
+	.register .button{
+		margin-top: 5%;
+	}
+	.sel_adress select{
+		background: url(../images/arrow.png) no-repeat scroll 97% center transparent; background-size: 12px; padding-left: 1.5%;
+	}
+	.sel_shops_list .shopAddress{
+		margin-top: 5px;
+	}
+
+	.sel_foods .adress{
+		margin-top: 7px;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
